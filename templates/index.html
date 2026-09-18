@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOC Security Operations Center - Choco AI Assistant</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Markdown-it for rendering AI Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/markdown-it@14.0.0/dist/markdown-it.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        soc: {
+                            bg: '#0b0f19',
+                            card: '#111827',
+                            border: '#1f2937',
+                            accent: '#3b82f6',
+                            critical: '#ef4444',
+                            high: '#f97316',
+                            medium: '#eab308',
+                            low: '#3b82f6'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0b0f19; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; }
+        .markdown-body h1 { font-size: 1.5rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; color: #60a5fa; }
+        .markdown-body h2 { font-size: 1.25rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem; color: #93c5fd; border-bottom: 1px solid #374151; padding-bottom: 0.25rem; }
+        .markdown-body h3 { font-size: 1.1rem; font-weight: 600; margin-top: 0.75rem; margin-bottom: 0.25rem; color: #cbd5e1; }
+        .markdown-body p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .markdown-body ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 0.75rem; }
+        .markdown-body ol { list-style-type: decimal; margin-left: 1.5rem; margin-bottom: 0.75rem; }
+        .markdown-body code { background-color: #1f2937; padding: 0.2rem 0.4rem; border-radius: 0.25rem; font-family: monospace; font-size: 0.9em; color: #f43f5e; }
+        .markdown-body pre { background-color: #0f172a; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; margin-bottom: 1rem; border: 1px solid #1e293b; }
+        .markdown-body pre code { background: none; padding: 0; color: #38bdf8; }
+        .markdown-body blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; color: #9ca3af; margin-bottom: 0.75rem; font-style: italic; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0b0f19; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1f2937; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #374151; }
+        
+        /* Floating Choco Mascot Animation */
+        @keyframes floatBounce {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-choco-float {
+            animation: floatBounce 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="h-screen flex flex-col overflow-hidden relative">
+
+    <!-- Top Header Navigation -->
+    <header class="bg-slate-900/90 border-b border-slate-800 px-6 py-3 flex items-center justify-between z-10">
+        <div class="flex items-center gap-3">
+            <div class="relative">
+                <img src="/static/choco.jpg" alt="Choco Mascot" class="w-10 h-10 rounded-full border-2 border-amber-500/60 shadow-lg object-cover">
+                <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-[9px] font-bold text-black border border-slate-900">✓</span>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+                    SOC AI Operations & Threat Sentinel
+                    <span class="text-xs font-normal px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">Choco AI 🍫</span>
+                </h1>
+                <p class="text-xs text-slate-400">Real-Time Event Detection & Groq AI Incident Reporting System</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-4">
+            <!-- Live Indicator -->
+            <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-emerald-400 text-xs font-medium">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                LIVE INGESTION
+            </div>
+
+            <!-- Groq API Status -->
+            <button onclick="openSettingsModal()" id="groqStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-800 border border-slate-700 text-xs font-medium text-slate-300 hover:bg-slate-750 transition">
+                <i data-lucide="cpu" class="w-4 h-4 text-purple-400"></i>
+                <span id="groqStatusText">Checking Groq API...</span>
+            </button>
+
+            <!-- Quick Attack Simulation Triggers -->
+            <div class="hidden md:flex items-center gap-1.5 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                <span class="text-[10px] text-slate-400 uppercase font-semibold px-2">Simulate:</span>
+                <button onclick="triggerAttack('sqli')" class="px-2 py-1 text-xs bg-red-950 hover:bg-red-900 text-red-300 border border-red-800/50 rounded transition">SQLi</button>
+                <button onclick="triggerAttack('bruteforce')" class="px-2 py-1 text-xs bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-800/50 rounded transition">BruteForce</button>
+                <button onclick="triggerAttack('powershell')" class="px-2 py-1 text-xs bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800/50 rounded transition">PowerShell</button>
+            </div>
+
+            <!-- Settings Button -->
+            <button onclick="openSettingsModal()" class="p-2 text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-lg border border-slate-700 transition" title="Dashboard Settings">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="flex-1 flex overflow-hidden">
+        
+        <!-- Sidebar Navigation -->
+        <aside class="w-64 bg-slate-900 border-r border-slate-800 flex flex-col justify-between py-4">
+            <nav class="space-y-1 px-3">
+                <button onclick="switchTab('ops')" id="nav-ops" class="tab-btn active flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition text-white bg-blue-600/20 border border-blue-500/30">
+                    <i data-lucide="layout-dashboard" class="w-4 h-4 text-blue-400"></i>
+                    SOC Live Operations
+                </button>
+                
+                <button onclick="switchTab('reports')" id="nav-reports" class="tab-btn flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+                    <i data-lucide="file-text" class="w-4 h-4 text-purple-400"></i>
+                    AI Reports Archive
+                    <span id="reportCountBadge" class="ml-auto bg-purple-500/20 text-purple-300 text-xs px-2 py-0.5 rounded-full border border-purple-500/30">0</span>
+                </button>
+                
+                <button onclick="switchTab('assistant')" id="nav-assistant" class="tab-btn flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+                    <img src="/static/choco.jpg" class="w-5 h-5 rounded-full border border-amber-500/50">
+                    Choco AI Assistant 🍫
+                </button>
+
+                <button onclick="switchTab('logs')" id="nav-logs" class="tab-btn flex items-center gap-3 w-full px-4 py-3 rounded-lg text-sm font-medium transition text-slate-400 hover:text-white hover:bg-slate-800">
+                    <i data-lucide="terminal" class="w-4 h-4 text-amber-400"></i>
+                    Raw Logs Inspector
+                </button>
+            </nav>
+
+            <!-- Bottom System Specs -->
+            <div class="px-4 py-3 mx-3 bg-slate-950/60 rounded-xl border border-slate-800/80 text-xs">
+                <div class="flex items-center gap-2 mb-2">
+                    <img src="/static/choco.jpg" class="w-6 h-6 rounded-full border border-amber-500/40">
+                    <span class="text-amber-300 font-semibold text-xs">Choco Mascot Ready</span>
+                </div>
+                <div class="flex justify-between text-slate-400 mb-1">
+                    <span>Groq LLM Engine:</span>
+                    <span id="sidebarModelText" class="text-purple-400 font-mono text-[11px] truncate max-w-[100px]">openai/gpt-120b</span>
+                </div>
+                <div class="flex justify-between text-slate-400">
+                    <span>Threat Rules:</span>
+                    <span class="text-blue-400 font-mono">Heuristic + Regex</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Views -->
+        <main class="flex-1 bg-slate-950 overflow-y-auto custom-scrollbar p-6">
+            
+            <!-- VIEW 1: SOC Live Operations Dashboard -->
+            <section id="view-ops" class="tab-view space-y-6">
+                <!-- Metrics Bar -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Logs Ingested</p>
+                            <h3 id="metricTotalLogs" class="text-2xl font-bold text-white mt-1">0</h3>
+                        </div>
+                        <div class="p-3 bg-blue-500/10 text-blue-400 rounded-lg border border-blue-500/20">
+                            <i data-lucide="database" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Total Security Events</p>
+                            <h3 id="metricTotalEvents" class="text-2xl font-bold text-amber-400 mt-1">0</h3>
+                        </div>
+                        <div class="p-3 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20">
+                            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Critical Threats</p>
+                            <h3 id="metricCriticalEvents" class="text-2xl font-bold text-red-500 mt-1">0</h3>
+                        </div>
+                        <div class="p-3 bg-red-500/10 text-red-400 rounded-lg border border-red-500/20">
+                            <i data-lucide="flame" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Choco AI Reports</p>
+                            <h3 id="metricTotalReports" class="text-2xl font-bold text-purple-400 mt-1">0</h3>
+                        </div>
+                        <div class="p-3 bg-purple-500/10 text-purple-400 rounded-lg border border-purple-500/20">
+                            <i data-lucide="sparkles" class="w-6 h-6"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Donut Chart -->
+                    <div class="bg-slate-900 border border-slate-800 p-5 rounded-xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                                <i data-lucide="pie-chart" class="w-4 h-4 text-blue-400"></i>
+                                Threat Severity Distribution
+                            </h3>
+                        </div>
+                        <div class="h-56 relative flex items-center justify-center">
+                            <canvas id="severityChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Category Bar Chart -->
+                    <div class="lg:col-span-2 bg-slate-900 border border-slate-800 p-5 rounded-xl flex flex-col justify-between">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                                <i data-lucide="bar-chart-2" class="w-4 h-4 text-purple-400"></i>
+                                Top Threat Categories
+                            </h3>
+                        </div>
+                        <div class="h-56 relative">
+                            <canvas id="categoryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Security Events Feed Table -->
+                <div class="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+                    <div class="p-4 border-b border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="activity" class="w-5 h-5 text-emerald-400 animate-pulse"></i>
+                            <h3 class="text-base font-semibold text-white">Real-Time Security Event Feed</h3>
+                        </div>
+                        <div class="flex items-center gap-3 w-full sm:w-auto">
+                            <!-- Severity Filter -->
+                            <select id="eventSeverityFilter" onchange="loadEvents()" class="bg-slate-950 text-xs border border-slate-800 text-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:border-blue-500">
+                                <option value="ALL">All Severities</option>
+                                <option value="CRITICAL">CRITICAL Only</option>
+                                <option value="HIGH">HIGH Only</option>
+                                <option value="MEDIUM">MEDIUM Only</option>
+                                <option value="LOW">LOW Only</option>
+                            </select>
+                            <button onclick="loadEvents()" class="p-1.5 bg-slate-800 text-slate-400 hover:text-white rounded-lg border border-slate-700">
+                                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs text-slate-300">
+                            <thead class="bg-slate-950 text-slate-400 uppercase font-semibold border-b border-slate-800 text-[11px]">
+                                <tr>
+                                    <th class="px-4 py-3">Event ID / Time</th>
+                                    <th class="px-4 py-3">Severity</th>
+                                    <th class="px-4 py-3">Category & Title</th>
+                                    <th class="px-4 py-3">Source IP</th>
+                                    <th class="px-4 py-3">Target User</th>
+                                    <th class="px-4 py-3 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="eventsTableBody" class="divide-y divide-slate-800/60 font-mono">
+                                <!-- Dynamic rows inserted via JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW 2: AI Reports Archive -->
+            <section id="view-reports" class="tab-view space-y-6 hidden">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 p-5 rounded-xl border border-slate-800">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <img src="/static/choco.jpg" class="w-7 h-7 rounded-full border border-purple-400">
+                            Archived Choco AI Incident Reports
+                        </h2>
+                        <p class="text-xs text-slate-400 mt-1">Dedicated repository of deep technical incident investigations analyzed by Choco AI.</p>
+                    </div>
+                    <button onclick="loadReports()" class="flex items-center gap-2 px-3 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold transition">
+                        <i data-lucide="rotate-cw" class="w-4 h-4"></i> Refresh Archive
+                    </button>
+                </div>
+
+                <!-- Reports Cards Grid -->
+                <div id="reportsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    <!-- Dynamic Report Cards -->
+                </div>
+            </section>
+
+            <!-- VIEW 3: Interactive AI Security Assistant (Choco) -->
+            <section id="view-assistant" class="tab-view h-[calc(100vh-7rem)] flex flex-col bg-slate-900 border border-slate-800 rounded-xl overflow-hidden hidden">
+                <!-- Assistant Header -->
+                <div class="p-4 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <img src="/static/choco.jpg" class="w-10 h-10 rounded-full border-2 border-amber-500 shadow-md object-cover">
+                        <div>
+                            <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                Choco - Your AI SOC Assistant 🍫
+                            </h2>
+                            <p class="text-xs text-slate-400">Context-Aware Real-time Log Querying & Threat Co-Pilot</p>
+                        </div>
+                    </div>
+                    <span class="text-xs font-mono px-2.5 py-1 rounded bg-amber-950/60 text-amber-300 border border-amber-800/60 flex items-center gap-1.5">
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        Choco Online
+                    </span>
+                </div>
+
+                <!-- Quick Suggestion Chips -->
+                <div class="p-3 bg-slate-900/80 border-b border-slate-800/80 flex flex-wrap gap-2 text-xs">
+                    <span class="text-slate-400 text-xs py-1">Ask Choco:</span>
+                    <button onclick="useQuickPrompt('Hi Choco! Summarize the top critical security events detected today.')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-full border border-slate-700 transition">
+                        ⚡ Summarize Critical Events
+                    </button>
+                    <button onclick="useQuickPrompt('Choco, provide a step-by-step PowerShell containment script for suspicious execution.')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-full border border-slate-700 transition">
+                        🛡️ Containment Script
+                    </button>
+                    <button onclick="useQuickPrompt('Choco, which source IP addresses generated the highest failed authentication attempts?')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-full border border-slate-700 transition">
+                        🔍 Brute Force IP Analysis
+                    </button>
+                </div>
+
+                <!-- Chat History Window -->
+                <div id="chatWindow" class="flex-1 p-6 overflow-y-auto custom-scrollbar space-y-4">
+                    <!-- Choco Welcome Message -->
+                    <div class="flex gap-4 max-w-3xl">
+                        <img src="/static/choco.jpg" class="w-9 h-9 rounded-full border-2 border-amber-500/80 shadow-md shrink-0 object-cover">
+                        <div class="bg-slate-950 p-4 rounded-2xl rounded-tl-none border border-slate-800 text-sm text-slate-200 space-y-2">
+                            <p class="font-semibold text-amber-300 flex items-center gap-2">
+                                Hi there, Analyst! 🍫 I'm Choco!
+                            </p>
+                            <p>I'm your dedicated SOC AI mascot and security assistant. I'm connected directly to your live system log telemetry and threat rules!</p>
+                            <p class="text-xs text-slate-400">Ask me anything about current attacks, suspicious IPs, or incident response scripts!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Input Form -->
+                <form id="chatForm" onsubmit="handleChatSubmit(event)" class="p-4 bg-slate-950 border-t border-slate-800 flex gap-3">
+                    <input type="text" id="chatInput" placeholder="Ask Choco about logs, threats, or mitigation scripts..." required
+                           class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-amber-500 placeholder-slate-500">
+                    <button type="submit" id="chatSendBtn" class="px-5 py-3 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-semibold flex items-center gap-2 transition">
+                        <span>Ask Choco</span>
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </form>
+            </section>
+
+            <!-- VIEW 4: Raw Log Inspector -->
+            <section id="view-logs" class="tab-view space-y-4 hidden">
+                <div class="flex items-center justify-between bg-slate-900 p-4 rounded-xl border border-slate-800">
+                    <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="terminal" class="w-5 h-5 text-amber-400"></i>
+                        System Raw Log Stream
+                    </h2>
+                    <button onclick="loadRawLogs()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs text-slate-300 rounded-lg border border-slate-700">
+                        Refresh Logs
+                    </button>
+                </div>
+                <div class="bg-slate-950 rounded-xl border border-slate-800 p-4 font-mono text-xs overflow-x-auto h-[calc(100vh-14rem)] custom-scrollbar">
+                    <div id="rawLogContainer" class="space-y-1">
+                        <!-- Raw log lines dynamically inserted -->
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- FLOATING CHOCO MASCOT ASSISTANT WIDGET (Bottom-Right) -->
+    <div class="fixed bottom-5 right-5 z-40 flex items-end gap-3 pointer-events-auto">
+        <!-- Choco Speech Bubble -->
+        <div id="chocoSpeechBubble" class="bg-slate-900 border border-amber-500/50 shadow-2xl p-3 rounded-2xl rounded-br-none text-xs text-slate-200 max-w-xs transition duration-300 opacity-95">
+            <p class="font-bold text-amber-300 flex items-center gap-1.5 mb-1">
+                <span>Choco 🍫</span>
+                <span class="text-[10px] text-slate-400 font-normal">AI Mascot</span>
+            </p>
+            <p id="chocoSpeechText">Hi! I'm Choco 🍫! Click me anytime to ask questions about your security logs!</p>
+        </div>
+
+        <!-- Choco Avatar Button -->
+        <button onclick="switchTab('assistant')" title="Chat with Choco AI" class="relative group focus:outline-none">
+            <span class="absolute -inset-1 bg-gradient-to-r from-amber-500 to-purple-600 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300 animate-pulse"></span>
+            <div class="relative w-14 h-14 rounded-full overflow-hidden border-2 border-amber-400 shadow-2xl bg-slate-900 flex items-center justify-center animate-choco-float">
+                <img src="/static/choco.jpg" alt="Choco" class="w-full h-full object-cover">
+            </div>
+        </button>
+    </div>
+
+    <!-- MODAL 1: Full Report Viewer -->
+    <div id="reportModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            <!-- Modal Header -->
+            <div class="p-5 bg-slate-950 border-b border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span id="modalSeverityBadge" class="px-2.5 py-1 text-xs font-bold rounded-md bg-red-950 text-red-400 border border-red-800">CRITICAL</span>
+                    <div>
+                        <h3 id="modalReportTitle" class="text-base font-bold text-white">Incident Analysis Report</h3>
+                        <p id="modalReportMeta" class="text-xs text-slate-400">Report ID: RPT-XXXX</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="modalPdfBtn" onclick="downloadReportPdf()" class="flex items-center gap-2 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold transition">
+                        <i data-lucide="download" class="w-4 h-4"></i> Download PDF
+                    </button>
+                    <button onclick="closeReportModal()" class="p-2 text-slate-400 hover:text-white rounded-lg bg-slate-800 hover:bg-slate-700">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Modal Body Markdown Content -->
+            <div id="modalReportContent" class="p-8 overflow-y-auto custom-scrollbar markdown-body text-slate-200">
+                <!-- Rendered Markdown HTML -->
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 2: Dashboard Settings -->
+    <div id="settingsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-6 shadow-2xl">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="sliders" class="w-5 h-5 text-blue-400"></i>
+                    Dashboard & Groq Settings
+                </h3>
+                <button onclick="closeSettingsModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form onsubmit="saveSettings(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Groq API Key</label>
+                    <input type="password" id="settingApiKey" placeholder="gsk_..." 
+                           class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                    <p id="apiKeyStatusHint" class="text-[11px] text-slate-500 mt-1">Get your free API key at <a href="https://console.groq.com" target="_blank" class="text-blue-400 underline">console.groq.com</a></p>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1">Groq LLM Model Selection</label>
+                    <select id="settingModelSelect" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <span class="text-xs font-medium text-slate-400">Enable Synthetic Attack Simulator</span>
+                    <input type="checkbox" id="settingSimulatorToggle" class="w-4 h-4 accent-blue-600 rounded">
+                </div>
+
+                <div class="pt-4 flex justify-end gap-3 border-t border-slate-800">
+                    <button type="button" onclick="closeSettingsModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-lg text-xs font-semibold">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xs font-semibold">Save Settings</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JS Logic Engine -->
+    <script>
+        const md = window.markdownit({ html: true, linkify: true });
+        let currentReportId = null;
+        let severityChart = null;
+        let categoryChart = null;
+        let chatHistory = [];
+
+        // App Initialization
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initCharts();
+            loadStats();
+            loadEvents();
+            loadReports();
+            loadRawLogs();
+            loadSettings();
+            initSSE();
+        });
+
+        // Tab Switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('bg-blue-600/20', 'border', 'border-blue-500/30', 'text-white');
+                el.classList.add('text-slate-400');
+            });
+
+            document.getElementById(`view-${tabName}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`nav-${tabName}`);
+            activeBtn.classList.add('bg-blue-600/20', 'border', 'border-blue-500/30', 'text-white');
+            activeBtn.classList.remove('text-slate-400');
+
+            if (tabName === 'reports') loadReports();
+            if (tabName === 'logs') loadRawLogs();
+            if (tabName === 'assistant') {
+                document.getElementById('chocoSpeechText').innerText = "Awesome! Let's analyze your security logs together!";
+            }
+        }
+
+        // Charts Initialization
+        function initCharts() {
+            const ctxSev = document.getElementById('severityChart').getContext('2d');
+            severityChart = new Chart(ctxSev, {
+                type: 'doughnut',
+                data: {
+                    labels: ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#ef4444', '#f97316', '#eab308', '#3b82f6'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#9ca3af', font: { size: 11 } } }
+                    }
+                }
+            });
+
+            const ctxCat = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctxCat, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Incidents',
+                        data: [],
+                        backgroundColor: '#8b5cf6',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { display: false } },
+                        y: { ticks: { color: '#9ca3af', font: { size: 10 } }, grid: { color: '#1e293b' } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        // Load Stats & Metrics
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/stats');
+                const data = await res.json();
+
+                document.getElementById('metricTotalLogs').innerText = data.total_logs.toLocaleString();
+                document.getElementById('metricTotalEvents').innerText = data.total_events.toLocaleString();
+                document.getElementById('metricCriticalEvents').innerText = data.critical_events.toLocaleString();
+                document.getElementById('metricTotalReports').innerText = data.total_reports.toLocaleString();
+                document.getElementById('reportCountBadge').innerText = data.total_reports;
+
+                // Update Groq Status Badge
+                const statusBadge = document.getElementById('groqStatusBadge');
+                const statusText = document.getElementById('groqStatusText');
+                if (data.groq_configured) {
+                    statusBadge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-xs font-medium text-amber-300 hover:bg-amber-900 transition";
+                    statusText.innerText = "Choco Ready (" + data.current_model.split('/')[1] + ")";
+                } else {
+                    statusBadge.className = "flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-950/60 border border-amber-500/40 text-xs font-medium text-amber-300 hover:bg-amber-900 transition";
+                    statusText.innerText = "Groq API Key Required";
+                }
+                document.getElementById('sidebarModelText').innerText = data.current_model;
+
+                // Update Severity Chart
+                const sDist = data.severity_distribution || {};
+                severityChart.data.datasets[0].data = [
+                    sDist['CRITICAL'] || 0,
+                    sDist['HIGH'] || 0,
+                    sDist['MEDIUM'] || 0,
+                    sDist['LOW'] || 0
+                ];
+                severityChart.update();
+
+                // Update Category Chart
+                const cDist = data.category_distribution || {};
+                categoryChart.data.labels = Object.keys(cDist);
+                categoryChart.data.datasets[0].data = Object.values(cDist);
+                categoryChart.update();
+
+            } catch (err) {
+                console.error("Failed to load stats:", err);
+            }
+        }
+
+        // Load Security Events Feed
+        async function loadEvents() {
+            const sev = document.getElementById('eventSeverityFilter').value;
+            try {
+                const res = await fetch(`/api/events?severity=${sev}&limit=30`);
+                const events = await res.json();
+                renderEventsTable(events);
+            } catch (err) {
+                console.error("Failed to load events:", err);
+            }
+        }
+
+        function renderEventsTable(events) {
+            const tbody = document.getElementById('eventsTableBody');
+            if (!events || events.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-slate-500">No security events detected yet. Active monitoring is running.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = events.map(ev => {
+                let badgeClass = "bg-blue-950 text-blue-400 border-blue-800";
+                if (ev.severity === 'CRITICAL') badgeClass = "bg-red-950 text-red-400 border-red-800 animate-pulse";
+                else if (ev.severity === 'HIGH') badgeClass = "bg-orange-950 text-orange-400 border-orange-800";
+                else if (ev.severity === 'MEDIUM') badgeClass = "bg-yellow-950 text-yellow-400 border-yellow-800";
+
+                const timeFormatted = ev.timestamp.split('T')[1] ? ev.timestamp.split('T')[1].substring(0, 8) : ev.timestamp;
+
+                return `
+                    <tr class="hover:bg-slate-900/60 transition">
+                        <td class="px-4 py-3 font-semibold text-slate-200">
+                            <div>${ev.event_id}</div>
+                            <div class="text-[10px] text-slate-500 font-normal">${timeFormatted}</div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded border ${badgeClass}">${ev.severity}</span>
+                        </td>
+                        <td class="px-4 py-3 font-sans">
+                            <div class="font-medium text-slate-200">${ev.title}</div>
+                            <div class="text-[11px] text-slate-400 truncate max-w-md">${ev.description}</div>
+                        </td>
+                        <td class="px-4 py-3 text-blue-400">${ev.source_ip || '192.168.1.1'}</td>
+                        <td class="px-4 py-3 text-slate-300">${ev.target_user || 'System'}</td>
+                        <td class="px-4 py-3 text-right">
+                            <button onclick="requestAiReport('${ev.event_id}')" class="px-2.5 py-1.5 bg-amber-600/20 hover:bg-amber-600 text-amber-300 hover:text-white rounded border border-amber-500/40 text-[11px] font-sans font-medium flex items-center gap-1.5 ml-auto transition">
+                                <img src="/static/choco.jpg" class="w-3.5 h-3.5 rounded-full">
+                                Ask Choco AI
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // On-Demand Groq AI Report Request
+        async function requestAiReport(eventId) {
+            const btn = event.target.closest('button');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Choco Analyzing...`;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/reports/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: eventId })
+                });
+                const report = await res.json();
+                if (report.error) {
+                    alert("Report Error: " + report.error);
+                } else {
+                    loadStats();
+                    openReportModal(report.report_id);
+                }
+            } catch (err) {
+                alert("Failed to generate AI report: " + err.message);
+            } finally {
+                btn.innerHTML = originalHTML;
+                btn.disabled = false;
+                lucide.createIcons();
+            }
+        }
+
+        // Load Archived AI Reports
+        async function loadReports() {
+            try {
+                const res = await fetch('/api/reports');
+                const reports = await res.json();
+                renderReportsGrid(reports);
+            } catch (err) {
+                console.error("Failed to load reports:", err);
+            }
+        }
+
+        function renderReportsGrid(reports) {
+            const grid = document.getElementById('reportsGrid');
+            if (!reports || reports.length === 0) {
+                grid.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">No archived reports found. Click "Ask Choco AI" on any event in the feed to generate an incident analysis.</div>`;
+                return;
+            }
+
+            grid.innerHTML = reports.map(rpt => {
+                let badgeClass = "bg-red-950 text-red-400 border-red-800";
+                if (rpt.event_severity === 'HIGH') badgeClass = "bg-orange-950 text-orange-400 border-orange-800";
+                else if (rpt.event_severity === 'MEDIUM') badgeClass = "bg-yellow-950 text-yellow-400 border-yellow-800";
+
+                return `
+                    <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between hover:border-amber-500/50 transition shadow-lg">
+                        <div>
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="px-2 py-0.5 text-[10px] font-bold rounded border ${badgeClass}">${rpt.event_severity || 'HIGH'}</span>
+                                <span class="text-[11px] text-slate-500 font-mono">${rpt.created_at.split('T')[0]}</span>
+                            </div>
+                            <h3 class="text-sm font-bold text-white line-clamp-1">${rpt.event_title || rpt.summary}</h3>
+                            <p class="text-xs text-amber-300 font-mono mt-1">${rpt.mitre_attack || 'T1082'}</p>
+                            <p class="text-xs text-slate-400 mt-2 line-clamp-2">${rpt.summary}</p>
+                        </div>
+                        <div class="mt-4 pt-3 border-t border-slate-800 flex items-center justify-between">
+                            <span class="text-[10px] text-amber-400/80 font-mono flex items-center gap-1">
+                                <img src="/static/choco.jpg" class="w-3 h-3 rounded-full">
+                                Choco Verified
+                            </span>
+                            <div class="flex items-center gap-2">
+                                <button onclick="deleteReport('${rpt.report_id}')" class="p-1.5 text-slate-500 hover:text-red-400 rounded hover:bg-slate-800" title="Delete Report">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                                <button onclick="openReportModal('${rpt.report_id}')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold rounded-lg flex items-center gap-1 transition">
+                                    View Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        // Open Report Viewer Modal
+        async function openReportModal(reportId) {
+            currentReportId = reportId;
+            try {
+                const res = await fetch(`/api/reports/${reportId}`);
+                const rpt = await res.json();
+
+                document.getElementById('modalReportTitle').innerText = rpt.event_title || rpt.summary;
+                document.getElementById('modalReportMeta').innerText = `Report ID: ${rpt.report_id} | Created: ${rpt.created_at} | Analyzed by Choco AI (${rpt.model_used})`;
+                document.getElementById('modalReportContent').innerHTML = md.render(rpt.content_markdown);
+                
+                document.getElementById('reportModal').classList.remove('hidden');
+            } catch (err) {
+                alert("Failed to load report: " + err.message);
+            }
+        }
+
+        function closeReportModal() {
+            document.getElementById('reportModal').classList.add('hidden');
+            currentReportId = null;
+        }
+
+        function downloadReportPdf() {
+            if (currentReportId) {
+                window.open(`/api/reports/${currentReportId}/pdf`, '_blank');
+            }
+        }
+
+        async function deleteReport(reportId) {
+            if (!confirm("Are you sure you want to delete this incident report?")) return;
+            try {
+                await fetch(`/api/reports/${reportId}`, { method: 'DELETE' });
+                loadReports();
+                loadStats();
+            } catch (err) {
+                alert("Error deleting report: " + err.message);
+            }
+        }
+
+        // Interactive AI Assistant Chat (Choco)
+        function useQuickPrompt(text) {
+            document.getElementById('chatInput').value = text;
+            handleChatSubmit(new Event('submit'));
+        }
+
+        async function handleChatSubmit(e) {
+            e.preventDefault();
+            const input = document.getElementById('chatInput');
+            const query = input.value.trim();
+            if (!query) return;
+
+            const chatWindow = document.getElementById('chatWindow');
+            
+            // Append User Message
+            chatWindow.innerHTML += `
+                <div class="flex gap-4 max-w-3xl ml-auto justify-end">
+                    <div class="bg-blue-600 text-white p-4 rounded-2xl rounded-tr-none text-sm space-y-1 shadow-md">
+                        <p>${query}</p>
+                    </div>
+                </div>
+            `;
+            input.value = '';
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+
+            // Append Typing Indicator
+            const loaderId = 'loader-' + Date.now();
+            chatWindow.innerHTML += `
+                <div id="${loaderId}" class="flex gap-4 max-w-3xl">
+                    <img src="/static/choco.jpg" class="w-9 h-9 rounded-full border-2 border-amber-500/80 shadow-md shrink-0 object-cover">
+                    <div class="bg-slate-950 p-4 rounded-2xl rounded-tl-none border border-slate-800 text-sm text-amber-300 flex items-center gap-2">
+                        <i data-lucide="loader-2" class="w-4 h-4 animate-spin text-amber-400"></i>
+                        Choco 🍫 is analyzing live logs and formulating your response...
+                    </div>
+                </div>
+            `;
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+            lucide.createIcons();
+
+            try {
+                const res = await fetch('/api/assistant', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query: query, history: chatHistory })
+                });
+                const data = await res.json();
+                
+                document.getElementById(loaderId).remove();
+                
+                chatHistory.push({ sender: 'user', text: query });
+                chatHistory.push({ sender: 'assistant', text: data.answer });
+
+                chatWindow.innerHTML += `
+                    <div class="flex gap-4 max-w-3xl">
+                        <img src="/static/choco.jpg" class="w-9 h-9 rounded-full border-2 border-amber-500 shadow-md shrink-0 object-cover">
+                        <div class="bg-slate-950 p-5 rounded-2xl rounded-tl-none border border-slate-800 text-sm text-slate-200 space-y-2 markdown-body shadow-lg">
+                            ${md.render(data.answer)}
+                        </div>
+                    </div>
+                `;
+                chatWindow.scrollTop = chatWindow.scrollHeight;
+                lucide.createIcons();
+
+            } catch (err) {
+                document.getElementById(loaderId).remove();
+                chatWindow.innerHTML += `<div class="text-xs text-red-400 py-2">Choco Error: ${err.message}</div>`;
+            }
+        }
+
+        // Load Raw Logs Inspector
+        async function loadRawLogs() {
+            try {
+                const res = await fetch('/api/logs?limit=50');
+                const logs = await res.json();
+                const container = document.getElementById('rawLogContainer');
+                
+                container.innerHTML = logs.map(l => {
+                    let levelColor = "text-slate-400";
+                    if (l.level === 'CRITICAL' || l.level === 'FATAL') levelColor = "text-red-400 font-bold";
+                    else if (l.level === 'ERROR' || l.level === 'WARN') levelColor = "text-amber-400";
+
+                    return `<div class="py-0.5 border-b border-slate-900/60"><span class="text-slate-600">[${l.timestamp.substring(11,19)}]</span> <span class="text-blue-400">[${l.source}]</span> <span class="${levelColor}">[${l.level}]</span> ${l.message}</div>`;
+                }).join('');
+            } catch (err) {
+                console.error("Failed to load logs:", err);
+            }
+        }
+
+        // Settings Modal Handlers
+        async function loadSettings() {
+            try {
+                const res = await fetch('/api/settings');
+                const data = await res.json();
+                
+                const select = document.getElementById('settingModelSelect');
+                const stats = await (await fetch('/api/stats')).json();
+                
+                select.innerHTML = (stats.available_models || []).map(m => 
+                    `<option value="${m}" ${m === data.groq_model ? 'selected' : ''}>${m}</option>`
+                ).join('');
+
+                if (data.groq_api_key_set) {
+                    document.getElementById('settingApiKey').placeholder = data.groq_api_key_masked;
+                }
+                document.getElementById('settingSimulatorToggle').checked = data.simulator_enabled;
+            } catch (err) {
+                console.error("Failed to load settings:", err);
+            }
+        }
+
+        function openSettingsModal() {
+            loadSettings();
+            document.getElementById('settingsModal').classList.remove('hidden');
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').classList.add('hidden');
+        }
+
+        async function saveSettings(e) {
+            e.preventDefault();
+            const apiKey = document.getElementById('settingApiKey').value.trim();
+            const model = document.getElementById('settingModelSelect').value;
+            const sim = document.getElementById('settingSimulatorToggle').checked;
+
+            const payload = { groq_model: model, simulator_enabled: sim };
+            if (apiKey) payload.groq_api_key = apiKey;
+
+            try {
+                await fetch('/api/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                closeSettingsModal();
+                loadStats();
+                alert("Settings saved successfully.");
+            } catch (err) {
+                alert("Failed to save settings: " + err.message);
+            }
+        }
+
+        // Trigger Quick Attacks
+        async function triggerAttack(type) {
+            try {
+                const res = await fetch('/api/simulate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ type: type })
+                });
+                const data = await res.json();
+                loadEvents();
+                loadStats();
+            } catch (err) {
+                console.error("Simulation error:", err);
+            }
+        }
+
+        // Real-Time SSE Stream Handler
+        function initSSE() {
+            const evtSource = new EventSource('/api/stream/events');
+            evtSource.onmessage = function(e) {
+                try {
+                    const data = JSON.parse(e.data);
+                    if (data.type === 'update') {
+                        loadStats();
+                        if (data.event) {
+                            loadEvents();
+                            // Choco Speech Notification on Critical Event
+                            if (data.event.severity === 'CRITICAL') {
+                                document.getElementById('chocoSpeechText').innerText = `🚨 Alert! Choco detected a CRITICAL event: ${data.event.title}! Click to analyze!`;
+                            }
+                        }
+                    }
+                } catch (err) {}
+            };
+        }
+    </script>
+</body>
+</html>
